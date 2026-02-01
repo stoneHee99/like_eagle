@@ -52,12 +52,12 @@ export function Calendar() {
     const month = now.getMonth() + 1; // 0-indexed
     const day = now.getDate();
 
-    // 2월이면 해당 날짜까지만 열림, 3월 이후면 전체 열림
-    if (year === 2025 && month === 2) {
+    // 2026년 2월이면 해당 날짜까지만 열림
+    if (year === 2026 && month === 2) {
       return Math.min(day, 28);
     }
-    // 2025년 1월 이전이면 아무것도 안 열림, 그 외(3월 이후)는 전체 열림
-    if (year === 2025 && month < 2) {
+    // 2026년 1월 이전이면 아무것도 안 열림, 그 외(3월 이후)는 전체 열림
+    if (year === 2026 && month < 2) {
       return 0;
     }
     return 28;
