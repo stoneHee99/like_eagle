@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react';
 import { DayCard } from './DayCard';
 import { VerseModal } from './VerseModal';
 import { UserInfoModal } from './UserInfoModal';
-import { verses } from '../data/verses';
+import { fetchAdventVerses } from '../api/advent';
+import type { Verse } from '../data/verses';
+import { mapApiVerseToVerse } from '../data/verses';
 
 const STORAGE_KEY = 'eagle-clinic-opened-days';
 const USER_INFO_KEY = 'eagle-clinic-user-info';
+const VERSES_KEY = 'eagle-clinic-verses';
 
 interface UserInfo {
   temple: string;
@@ -18,7 +21,9 @@ export function Calendar() {
   const [openedDays, setOpenedDays] = useState<number[]>([]);
   const [animatingDay, setAnimatingDay] = useState<number | null>(null);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [verses, setVerses] = useState<Verse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // localStorage에서 데이터 불러오기
   useEffect(() => {
@@ -30,6 +35,11 @@ export function Calendar() {
     const savedOpenedDays = localStorage.getItem(STORAGE_KEY);
     if (savedOpenedDays) {
       setOpenedDays(JSON.parse(savedOpenedDays));
+    }
+
+    const savedVerses = localStorage.getItem(VERSES_KEY);
+    if (savedVerses) {
+      setVerses(JSON.parse(savedVerses));
     }
 
     setIsLoading(false);
@@ -70,9 +80,32 @@ export function Calendar() {
     }, 700);
   };
 
-  const handleUserInfoSubmit = (info: UserInfo) => {
-    setUserInfo(info);
-    localStorage.setItem(USER_INFO_KEY, JSON.stringify(info));
+  const handleUserInfoSubmit = async (info: UserInfo) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // API 호출
+      const response = await fetchAdventVerses(
+        info.name,
+        info.temple,
+        parseInt(info.generation)
+      );
+
+      // 응답을 Verse 타입으로 변환
+      const mappedVerses = response.verses.map(mapApiVerseToVerse);
+
+      // 상태 및 localStorage 저장
+      setUserInfo(info);
+      setVerses(mappedVerses);
+      localStorage.setItem(USER_INFO_KEY, JSON.stringify(info));
+      localStorage.setItem(VERSES_KEY, JSON.stringify(mappedVerses));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'API 호출에 실패했습니다.');
+      console.error('API 호출 오류:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const selectedVerse = selectedDay ? verses.find(v => v.day === selectedDay) : null;
@@ -81,7 +114,28 @@ export function Calendar() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-amber-50 flex items-center justify-center">
-        <div className="text-amber-500">로딩중...</div>
+        <div className="text-center">
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🦅</div>
+          <div className="text-amber-500">로딩중...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // 에러 발생 시
+  if (error && !userInfo) {
+    return (
+      <div className="min-h-screen bg-amber-50 flex items-center justify-center p-6">
+        <div className="text-center">
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>😢</div>
+          <div className="text-red-500" style={{ marginBottom: '16px' }}>{error}</div>
+          <button
+            onClick={() => setError(null)}
+            className="bg-amber-400 text-white px-6 py-2 rounded-lg font-bold"
+          >
+            다시 시도
+          </button>
+        </div>
       </div>
     );
   }
@@ -105,8 +159,22 @@ export function Calendar() {
       </header>
 
       {/* Calendar Grid */}
-      <main>
-        <div className="grid grid-cols-7 gap-3" style={{ width: '85%', margin: '0 auto' }}>
+      <main style={{ width: '90%', margin: '0 auto' }}>
+        {/* 요일 헤더 */}
+        <div className="grid grid-cols-7 gap-3" style={{ marginBottom: '16px' }}>
+          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+            <div
+              key={i}
+              className="text-center font-extrabold"
+              style={{ color: 'rgba(0,0,0,0.45)', letterSpacing: '0.1em', fontSize: '12px' }}
+            >
+              {day}
+            </div>
+          ))}
+        </div>
+
+        {/* 날짜 그리드 */}
+        <div className="grid grid-cols-7 gap-x-3 gap-y-4">
           {verses.map((verse) => {
             const { isUnlocked, isToday } = getDayStatus(verse.day);
             const isOpened = openedDays.includes(verse.day);
