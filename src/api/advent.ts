@@ -33,6 +33,9 @@ export async function fetchAdventVerses(
   const response = await fetch(`${API_BASE_URL}/advent?${params}`);
 
   if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error('NOT_FOUND');
+    }
     throw new Error(`API 호출 실패: ${response.status}`);
   }
 

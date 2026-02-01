@@ -124,14 +124,24 @@ export function Calendar() {
 
   // 에러 발생 시
   if (error && !userInfo) {
+    const isNotFound = error === 'NOT_FOUND';
     return (
       <div className="min-h-screen bg-amber-50 flex items-center justify-center p-6">
-        <div className="text-center">
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>😢</div>
-          <div className="text-red-500" style={{ marginBottom: '16px' }}>{error}</div>
+        <div className="text-center" style={{ maxWidth: '300px' }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>
+            {isNotFound ? '🔍' : '😢'}
+          </div>
+          <div className="text-amber-800 font-bold" style={{ fontSize: '16px', marginBottom: '12px' }}>
+            {isNotFound ? '해당 청년의 간증 내용이 검색되지 않았습니다.' : '오류가 발생했습니다.'}
+          </div>
+          {isNotFound && (
+            <div className="text-amber-600" style={{ fontSize: '14px', marginBottom: '20px' }}>
+              각 성전에 문의 부탁드립니다.
+            </div>
+          )}
           <button
             onClick={() => setError(null)}
-            className="bg-amber-400 text-white px-6 py-2 rounded-lg font-bold"
+            className="bg-gradient-to-r from-amber-400 to-orange-400 text-white px-6 py-3 rounded-xl font-bold shadow-md"
           >
             다시 시도
           </button>
